@@ -1,4 +1,5 @@
 const checkPointSchema = require('../model/checkPointSchema');
+const teamSchema = require('../model/teamSchema');
 const teamschema = require('../model/teamSchema');
 const express = require('express');
 
@@ -92,6 +93,34 @@ checkPointRoute.post('/checkpoints', async (req, res) => {
     } catch (error) {
         console.error('Error marking checkpoint:', error);
         res.status(500).json({ message: 'Error marking checkpoint', error });
+    }
+});
+
+checkPointRoute.post('/teams/remove-checkpoints', async (req, res) => {
+    try {
+        // List of times to delete
+        const  times  = req.body;
+
+        // Validate input
+        if (!Array.isArray(times) || times.length === 0) {
+            return res.status(400).json({ message: 'Invalid input: Provide an array of times to delete.' });
+        }
+
+        // Perform the deletion for all teams
+        const result = await teamSchema.updateMany(
+            {}, // Matches all teams
+            { $pull: { checkpoints: { time: { $in: times } } } }, // Removes checkpoints with matching times
+            { multi: true } // Ensures it applies to all matching documents
+        );
+
+        res.status(200).json({
+            message: 'Checkpoints removed successfully.',
+            matchedCount: result.matchedCount,
+            modifiedCount: result.modifiedCount,
+        });
+    } catch (error) {
+        console.error('Error removing checkpoints:', error);
+        res.status(500).json({ message: 'Error removing checkpoints', error });
     }
 });
 
